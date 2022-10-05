@@ -1,0 +1,154 @@
+from tkinter import *
+from time import *
+from random import *
+root = Tk()
+screen = Canvas(root, width = 800, height = 600, background = "saddlebrown")
+
+
+def setInitialValues():
+	global r, numFlies, x, y, xSpeeds, ySpeeds, visible, eaten, body, frogImgFile
+	global lwing, rwing, length, width, tongueLength, tongueHeight, tongueDrawing
+	global numEaten, tongueOut, xFrog
+
+	numFlies = 50
+	numEaten = 0
+	xFrog = 100
+	tongueLength = 300
+	tongueHeight = 40
+	x = []
+	y = []
+	xSpeeds = []
+	ySpeeds = []
+	eaten = []
+	visible = [] #Example:  If there are 5 flies and if visible == [True, True, False, False, True], then flies 0, 1 and 4 are alive, but flies 2 and 3 are dead
+	body = []
+	lwing = []
+	rwing = []
+	tongueDrawing = 0
+	tongueOut = False
+	length = 15
+	width = 5
+	frogImgFile = PhotoImage(file = "Frog.png")
+
+	#Fill the empy fly-arrays with starting values
+	for i in range(numFlies):
+		x.append( randint(100, 700) )
+		y.append( randint(100, 500) )
+		xSpeeds.append( uniform(-8, 8) )
+		ySpeeds.append( uniform(-8, 8) )
+		visible.append( True )  #All flies are alive at the start
+		eaten.append( False ) 
+		body.append(0)
+		lwing.append(0)
+		rwing.append(0)
+
+
+def drawSwamp():
+	global frogImg, frogDrawing
+	
+	for g in range(2000):
+		x = randint(0, 800)
+		y = randint(140, 500)
+		size = randint(5, 15)
+		screen.create_line(x, y, x+size, y+size, fill = "lawn green")
+
+	screen.create_rectangle(0, 0, 800, 150, fill = "skyblue")
+	screen.create_oval(-150, 300, 900, 500, fill = "blue")
+
+	frogDrawing = screen.create_image(100, 500, image = frogImgFile)
+
+	#Lily pads
+	numlily = 5
+	x1 = []
+	y1 = []
+
+	for k in range(numlily):
+		x1.append(randint(300, 700))
+		y1.append(randint(500, 650))
+		screen.create_oval(x1[k], y1[k], x1[k]+50, y1[k]+50, fill = "green")
+		screen.create_polygon(x1[k]+25, y1[k]+25, x1[k]+50, y1[k], x1[k]+50, y1[k]+50, fill = "blue", outline = "blue")
+
+	screen.update()
+
+
+def drawFlies():
+	global body, lwing, rwing
+	
+	for i in range(numFlies):
+		
+		if visible[i] == True: 
+			body[i] = screen.create_oval( x[i], y[i], x[i]+width, y[i]+length, fill = "black" )
+			lwing[i] = screen.create_oval( x[i]-10, y[i]+5, x[i], y[i]+10, fill = "grey" )
+			rwing[i] = screen.create_oval( x[i]+5, y[i]+5, x[i]+15, y[i]+10, fill = "grey" )
+
+
+def updateFlyPositions():
+	global x, y, visible, xSpeeds, ySpeeds
+	
+	for i in range(numFlies):      
+		if visible[i] == True:
+			x[i] = x[i] + xSpeeds[i]
+			y[i] = y[i] + ySpeeds[i]
+
+			#Checking for bouncing off the edges
+			if x[i] < 50 or x[i] > 750: 
+				xSpeeds[i] *= -1
+					
+			if y[i] < 50 or y[i] > 500:
+				ySpeeds[i] *= -1
+
+		if eaten[i] == True:
+			if x[i] <= 210:
+				visible[i] = False
+
+
+def checkForCaughtFlies():
+	global alive, eaten, numEaten
+	
+	for i in range(numFlies):
+		if eaten[i] == False:
+			if xFrog < x[i] < xFrog + tongueLength and 405 < y[i] < 405 + tongueHeight:
+				if tongueOut == True:
+					xSpeeds[i] = -40
+					ySpeeds[i] = 0
+					eaten[i] = True                           
+					numEaten = numEaten + 1
+										
+ 
+def mouseClickHandler(event):
+	global tongueOut, tongueDrawing
+	
+	tongueOut = True
+	tongueDrawing = screen.create_oval( 205, 405, 565, 425, fill = "pink")
+
+
+def mouseReleaseHandler( event ):
+	global tongueOut
+	
+	screen.delete( tongueDrawing ) 
+	tongueOut = False
+
+
+def runGame():
+	setInitialValues()
+	drawSwamp()
+	
+	while numEaten < numFlies:
+		drawFlies()
+		updateFlyPositions()
+		checkForCaughtFlies()
+
+		screen.update()
+		sleep(0.03)
+
+		for i in range( numFlies ):
+			screen.delete( lwing[i], rwing[i], body[i] )
+
+
+root.after( 0, runGame )
+
+screen.bind("<Button-1>", mouseClickHandler) 
+screen.bind("<ButtonRelease-1>", mouseReleaseHandler) 
+
+screen.pack()
+screen.focus_set() #Makes Python pay attention to keyboard and mouse events
